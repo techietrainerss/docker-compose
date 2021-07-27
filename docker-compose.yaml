@@ -1,0 +1,63 @@
+version: '3'
+services:
+  cart:
+    container_name: cart
+    image: techietrainerss/cart:v1
+    environment:
+      REDIS_HOST: redis
+      CATALOGUE_HOST: catalogue
+    depends_on:
+      - catalogue
+      - redis
+  mysql:
+    container_name: mysql
+    image: techietrainerss/mysql:v1
+  shipping:
+    container_name: shipping
+    image: techietrainerss/shipping:v1
+    depends_on:
+     - mysql
+  mongodb:
+    build:
+      context: mongo
+    image: techietrainerss/mongo:v1
+  redis:
+    image: redis:4.0.6
+  rabbitmq:
+    image: rabbitmq:3.7-management-alpine
+  catalogue:
+    container_name: catalogue
+    image: techietrainerss/catalogue:v1
+    environment:
+      MONGO_URL: "mongodb://mongodb:27017/catalogue"
+    depends_on:
+      - mongodb
+  user:
+    build:
+      context: user
+    environment:
+       MONGO_URL: "mongodb://mongodb:27017/users"
+       RDIS_HOST: redis
+    image: techietrainerss/user:v1
+    depends_on:
+      - mongodb
+      - redis
+  web:
+    build:
+      context: web
+    image: techietrainerss/web:v1
+    depends_on:
+      - user
+      - catalogue
+    ports:
+      - "8080:8080"
+  payment:
+    container_name: payment
+    image: techietrainerss/payment:v1
+    environment:
+      CART_HOST: cart
+      USER_HOST: user
+      AMQP_HOST: rabbitmq
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq
